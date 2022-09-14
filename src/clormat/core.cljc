@@ -79,7 +79,7 @@
 
 (def gen-re (re-pattern (str spec "(.*)")))
 
-(defn format*
+(defn -format
   [s & args]
   (let [[_ start] (re-find start-re s)
         tail (subs s (count start))]
@@ -100,3 +100,5 @@
                    (re-seq gen-re rem)
                    rem))
           (str (.append result tested)))))))
+
+#?(:cljs (def format -format))
