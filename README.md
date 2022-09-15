@@ -38,7 +38,7 @@ variables (requires the `ci` task be run first):
 
     $ clojure -T:build deploy
 
-Your library will be deployed to net.clojars.format/format on clojars.org by default.
+Your library will be deployed to org.clojars.quoll/clormat on clojars.org by default.
 
 ## License
 
