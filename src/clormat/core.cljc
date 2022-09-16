@@ -21,12 +21,28 @@
 (defn hex
   "Convert an integer to a hexadecimal string"
   [n]
-  #?(:clj (Long/toHexString n) :cljs (.toString n 16)))
+  #?(:clj (Long/toHexString n)
+     :cljs (if (pos? n)
+             (.toString n 16)
+             (let [pn (+ js/Number.MAX_SAFE_INTEGER n 1)
+                   s (.toString pn 16)]
+               (if (> pn 0x0FFFFFFFFFFFFF)
+                 (str "3" (subs s 1))
+                 (let [lead (- 14 (count s))]
+                   (str (subs "20000000000000" 0 lead) s)))))))
 
 (defn oct
   "Convert an integer to a octal string"
   [n]
-  #?(:clj (Long/toOctalString n) :cljs (.toString n 8)))
+  #?(:clj (Long/toOctalString n)
+     :cljs (if (pos? n)
+             (.toString n 8)
+             (let [pn (+ js/Number.MAX_SAFE_INTEGER n 1)
+                   s (.toString pn 8)]
+               (if (> pn 0177777777777777777)
+                 (str "3" (subs s 1))
+                 (let [lead (- 14 (count s))]
+                   (str (subs "20000000000000" 0 lead) s)))))))
 
 (defn set-width
   "Sets the minimum width of a string, padding with a provided character if needed.
@@ -84,9 +100,15 @@
             (let [padding (if (flagset? \0) \0 \space)]
               (set-width arg width left padding))
             (err (str arg "is not an integer") lexed))
-      "o" (set-width (oct arg) width)
-      "x" (set-width (hex arg) width)
-      "X" (set-width (str/upper-case (hex arg)) width)
+      "o" (set-width (oct arg (flagset? \#)) width)
+      "x" (let [h (hex arg)]
+            (if (flagset? \#)
+              (str "0x" (set-width h (- width 2)))
+              (set-width h width)))
+      "X" (let [h (str/upper-case (hex arg))]
+            (if (flagset? \#)
+              (str "0x" (set-width h (- width 2)))
+              (set-width h width)))
       "e" arg
       "E" arg
       "f" arg
