@@ -39,10 +39,11 @@
              (.toString n 8)
              (let [pn (+ js/Number.MAX_SAFE_INTEGER n 1)
                    s (.toString pn 8)]
-               (if (> pn 0177777777777777777)
-                 (str "3" (subs s 1))
-                 (let [lead (- 14 (count s))]
-                   (str (subs "20000000000000" 0 lead) s)))))))
+               (if (> pn 077777777777777777)
+                 (let [r ({"3" "7" "2" "6" "1" "5"} (first s))]
+                   (str r (subs s 1)))
+                 (let [lead (- 18 (count s))]
+                   (str (subs "40000000000000000" 0 lead) s)))))))
 
 (defn set-width
   "Sets the minimum width of a string, padding with a provided character if needed.
