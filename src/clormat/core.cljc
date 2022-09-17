@@ -72,6 +72,53 @@
               :precision precision}]
     `(throw (ex-info ~msg ~data))))
 
+(defn format-hex
+  "Formats hex numbers according to provided flags and width"
+  [a width left flagset?]
+  (let [h (hex arg)]
+    (if (flagset? \#)
+      (if (flagset? \0)
+        (str "0x" (set-width h (- width 2) left \0))
+        (set-width (str "0x" h) (- width 2) left))
+      (let [padding (if (flagset? \0) \0 \space)]
+        (set-width h width left padding)))))
+
+(defn dformat
+  "Uses the default locale to do number formatting"
+  [d group? width]
+  #?(:clj (let [nf (NumberFormat/getInstance)]
+            (.setGroupingUsed nf group?)
+            (when width (.getMinimumIntegerDigits nf width))
+            (.format nf d))
+     :cljs (let [options (if group? #js{:useGrouping "true"} #js{})
+                 options (if width
+                           (js/Object.assign options #js{:minimumSignificantDigits width})
+                           options)]
+             (.format (js/Intl.NumberFormat) d options))))
+
+(defn format-dec
+  "Formats decimal integers according to provided flags and width"
+  [a width left flagset?]
+  (let [fmt #(.format number-formatter %)
+        [v sign] (if (neg? a) [a \-] [(- a) \+])
+        ;; if the numberformatter is padding with zeros, then determine the width based
+        ;; of extra characters that may be added, such as parens or leading +/-
+        w (and width
+               (flagset? \0)
+               (if (= sign \-)
+                 (if (flagset? \() (- width 2) (dec width))
+                 (if (or (flagset? \+) (flagset? \space)) (dec width))))
+        s (dformat v (flagset? \,) w)
+        ;; add extra characters to indicate sign
+        s (if (= sign \-)
+            (if (flagset? \-) (str \( s \)) (str \- s))
+            (if (flagset? \+)
+              (str \+ s)
+              (if (flagset? \space)
+                (str \space s)
+                s)))]
+    (set-width s width left)))
+
 (defn convert
   "Converts a lexed specifier and argument into the required string"
   [[_ _ _ flags width precision conversion rem :as lexed] arg]
@@ -97,19 +144,13 @@
       "S" (str/upper-case (as-string arg))
       "c" (as-char arg)
       "C" (str/upper-case (as-char arg))
-      "d" (if (int? arg)
-            (let [padding (if (flagset? \0) \0 \space)]
-              (set-width arg width left padding))
-            (err (str arg "is not an integer") lexed))
+      "d" (cond
+            (not (int? arg)) (err (str arg "is not an integer") lexed)
+            (flagset? \#) (err "# flag is illegal for integer" lexed)
+            :default (format-dec arg width left flagset?))
       "o" (set-width (oct arg (flagset? \#)) width)
-      "x" (let [h (hex arg)]
-            (if (flagset? \#)
-              (str "0x" (set-width h (- width 2)))
-              (set-width h width)))
-      "X" (let [h (str/upper-case (hex arg))]
-            (if (flagset? \#)
-              (str "0x" (set-width h (- width 2)))
-              (set-width h width)))
+      "x" (format-hex arg width left flagset)
+      "X" (str/upper-case (format-hex arg width left flagset))  ;; Note: I would prefer %#X on 15 to return 0xF, not 0XF
       "e" arg
       "E" arg
       "f" arg
