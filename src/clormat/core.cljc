@@ -150,7 +150,8 @@
             :default (format-dec arg width left flagset?))
       "o" (set-width (oct arg (flagset? \#)) width)
       "x" (format-hex arg width left flagset)
-      "X" (str/upper-case (format-hex arg width left flagset))  ;; Note: I would prefer %#X on 15 to return 0xF, not 0XF
+      ;; Note: I would prefer %#X on 15 to return 0xF, not 0XF
+      "X" (str/upper-case (format-hex arg width left flagset))
       "e" arg
       "E" arg
       "f" arg
