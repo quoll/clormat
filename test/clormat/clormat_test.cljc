@@ -61,4 +61,21 @@
          (is (= "500000000000000000" (-format "%o" -0300000000000000000)))
          (is (= "400000000000000001" (-format "%o" -0377777777777777777)))))))
 
+(deftest hash-test
+  (testing "Hash output"
+    (is (= "6645faa3" (-format "%h" "hello")))
+    (is (= "6645FAA3" (-format "%H" "hello")))
+    (is (= "  6645faa3" (-format "%10h" "hello")))
+    (is (= "6645faa3  " (-format "%-10h" "hello")))))
+
+(deftest bool-test
+  (testing "boolean output"
+    (is (= "true" (-format "%b" true)))
+    (is (= "false" (-format "%b" false)))
+    (is (= "TRUE" (-format "%B" true)))
+    (is (= "true" (-format "%b" 1)))
+    (is (= "false" (-format "%b" nil)))
+    (is (= "      true" (-format "%10b" "hello")))
+    (is (= "true      " (-format "%-10b" true)))))
+
 #?(:cljs (cljs.test/run-tests))

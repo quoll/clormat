@@ -151,8 +151,8 @@
                             (if (= "C" conversion) (str/upper-case s)))
                           (err (str a "is not a character") lexed)))]
     (case conversion
-      "b" (set-width (boolean arg) width 0 left)
-      "B" (set-width (str/upper-case (boolean arg)) width 0 left)
+      "b" (set-width (str (boolean arg)) width 0 left)
+      "B" (set-width (str/upper-case (str (boolean arg))) width 0 left)
       "h" (set-width (hex (hash arg)) width 0 left)
       "H" (set-width (str/upper-case (hex (hash arg))) width 0 left)
       "s" (as-string arg)
