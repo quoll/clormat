@@ -1,10 +1,11 @@
 (ns ^{:doc "A reimplementation of the format function for ClojureScript"
       :author "Paula Gearon"}
-  format.core
+  clormat.core
   (:require [clojure.string :as str])
   #?(:clj
      (:import [java.lang StringBuffer]  ;; this is automatically included
-              [java.util Formatter FormattableFlags])
+              [java.util FormattableFlags Formattable]
+              [java.text NumberFormat])
      :cljs
      (:import [goog.string StringBuffer])))
 
@@ -37,32 +38,36 @@
   #?(:clj (Long/toOctalString n)
      :cljs (if (pos? n)
              (.toString n 8)
-             (let [pn (+ js/Number.MAX_SAFE_INTEGER n 1)
-                   s (.toString pn 8)]
-               (if (> pn 077777777777777777)
-                 (let [r ({"3" "7" "2" "6" "1" "5"} (first s))]
-                   (str r (subs s 1)))
-                 (let [lead (- 18 (count s))]
-                   (str (subs "40000000000000000" 0 lead) s)))))))
+             (if (< n -377777777777777777)
+               (throw (ex-info "Number out of range for conversion to octal" {:n n}))
+               (let [pn (+ js/Number.MAX_SAFE_INTEGER n 1)
+                     s (.toString pn 8)]
+                 (if (> pn 077777777777777777)
+                   (let [r ({"3" "7" "2" "6" "1" "5"} (first s))]
+                     (str r (subs s 1)))
+                   (let [lead (- 18 (count s))]
+                     (str (subs "40000000000000000" 0 lead) s))))))))
 
 (defn set-width
   "Sets the minimum width of a string, padding with a provided character if needed.
   s: The string to set the minimum width for.
   w: The minimum width, as a character count.
+  decr: a decrement to use on the width, if not nil
   l: If true, the the output should be left-justified
   c: The character to pad the width, or space if not provided."
-  ([s w l] (set-width s w l \space))
-  ([s w l c]
+  ([s w decr l] (set-width s w decr l \space))
+  ([s w decr l c]
    (or
-    (and w (let [size (count s)]
-             (and (< size w)
-                  (let [block (repeat (- w size) c)]
-                    (if left
+    (and w (let [wdth (- w decr)
+                 size (count s)]
+             (and (< size wdth)
+                  (let [block (repeat (- wdth size) c)]
+                    (if l
                       (str (apply str block) s)
                       (apply str s block))))))
     s)))
 
-(defmacro err
+(defn err
   [s lexed]
   (let [msg (str "Format conversion error: " s)
         [_ _ _ flags width precision conversion] lexed
@@ -70,24 +75,35 @@
               :flags flags
               :width width
               :precision precision}]
-    `(throw (ex-info ~msg ~data))))
+    (throw (ex-info ~msg ~data))))
+
+(defn format-oct
+  "Formats octal numbers according to provided flags and width"
+  [a width left flagset?]
+  (let [h (oct a)]
+    (if (flagset? \#)
+      (if (flagset? \0)
+        (str "0" (set-width h width 2 left \0))
+        (set-width (str "0" h) width 2 left))
+      (let [padding (if (flagset? \0) \0 \space)]
+        (set-width h width 0 left padding)))))
 
 (defn format-hex
   "Formats hex numbers according to provided flags and width"
   [a width left flagset?]
-  (let [h (hex arg)]
+  (let [h (hex a)]
     (if (flagset? \#)
       (if (flagset? \0)
-        (str "0x" (set-width h (- width 2) left \0))
-        (set-width (str "0x" h) (- width 2) left))
+        (str "0x" (set-width h width 2 left \0))
+        (set-width (str "0x" h) width 2 left))
       (let [padding (if (flagset? \0) \0 \space)]
-        (set-width h width left padding)))))
+        (set-width h width 0 left padding)))))
 
 (defn dformat
   "Uses the default locale to do number formatting"
   [d group? width]
   #?(:clj (let [nf (NumberFormat/getInstance)]
-            (.setGroupingUsed nf group?)
+            (.setGroupingUsed nf (boolean group?))
             (when width (.getMinimumIntegerDigits nf width))
             (.format nf d))
      :cljs (let [options (if group? #js{:useGrouping "true"} #js{})
@@ -99,8 +115,7 @@
 (defn format-dec
   "Formats decimal integers according to provided flags and width"
   [a width left flagset?]
-  (let [fmt #(.format number-formatter %)
-        [v sign] (if (neg? a) [a \-] [(- a) \+])
+  (let [[v sign] (if (neg? a) [a \-] [(- a) \+])
         ;; if the numberformatter is padding with zeros, then determine the width based
         ;; of extra characters that may be added, such as parens or leading +/-
         w (and width
@@ -117,7 +132,7 @@
               (if (flagset? \space)
                 (str \space s)
                 s)))]
-    (set-width s width left)))
+    (set-width s width 0 left)))
 
 (defn convert
   "Converts a lexed specifier and argument into the required string"
@@ -126,20 +141,20 @@
         flagset? (reduce (fn [s f] (conj s f)) #{} flags)
         left (flagset? \-)
         precision (and precision (parse-long precision))
-        as-string (fn [a] #?(:clj (if (implements? a Formattable)
-                                    (let [flag (if left FormattableFlags.LEFT_JUSTIFY 0)]
-                                      (.formatTo ^Formattable arg flag (or width -1) (or precision -1)))
-                                    (set-width (str a) width left))
-                             :cljs (set-width (str a) width left)))
+        as-string (fn [a] #?(:clj (if (instance? Formattable a)
+                                    (let [flag (if left FormattableFlags/LEFT_JUSTIFY 0)]
+                                      (.formatTo ^Formattable a flag (or width -1) (or precision -1)))
+                                    (set-width (str a) width 0 left))
+                             :cljs (set-width (str a) width 0 left)))
         as-char (fn [a] (if (char? a)
-                          (let [s (set-width a width left)]
+                          (let [s (set-width a width 0 left)]
                             (if (= "C" conversion) (str/upper-case s)))
                           (err (str a "is not a character") lexed)))]
     (case conversion
-      "b" (set-width (boolean arg) width left)
-      "B" (set-width (str/upper-case (boolean arg)) width left)
-      "h" (set-width (hex (hash arg)) width)
-      "H" (set-width (str/upper-case (hex (hash arg))) width)
+      "b" (set-width (boolean arg) width 0 left)
+      "B" (set-width (str/upper-case (boolean arg)) width 0 left)
+      "h" (set-width (hex (hash arg)) width 0 left)
+      "H" (set-width (str/upper-case (hex (hash arg))) width 0 left)
       "s" (as-string arg)
       "S" (str/upper-case (as-string arg))
       "c" (as-char arg)
@@ -148,10 +163,10 @@
             (not (int? arg)) (err (str arg "is not an integer") lexed)
             (flagset? \#) (err "# flag is illegal for integer" lexed)
             :default (format-dec arg width left flagset?))
-      "o" (set-width (oct arg (flagset? \#)) width)
-      "x" (format-hex arg width left flagset)
+      "o" (format-oct arg width left flagset?)
+      "x" (format-hex arg width left flagset?)
       ;; Note: I would prefer %#X on 15 to return 0xF, not 0XF
-      "X" (str/upper-case (format-hex arg width left flagset))
+      "X" (str/upper-case (format-hex arg width left flagset?))
       "e" arg
       "E" arg
       "f" arg

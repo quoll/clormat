@@ -1,6 +1,6 @@
 (ns clormat.clormat-test
-  (:require [clojure.test :refer :all]
-            [clormat.clormat :refer :all]))
+  (:require [clojure.test :refer [deftest testing is]]
+            [clormat.core :refer [-format]]))
 
 (deftest simple-test
   (testing "Simple substitution"
@@ -34,10 +34,11 @@
     (is (= "0X0012D687" (-format "%#010X" 1234567)))
     (is (= "0X12D687  " (-format "%#-10X" 1234567)))
     #?(:cljs
-       (is (= "3fffffffffffff" (-format "%x" -1)))
-       (is (= "30000000000000" (-format "%x" -0x10000000000000)))
-       (is (= "2fffffffffffff" (-format "%x" -0x10000000000001)))
-       (is (= "20000000000001" (-format "%x" js/Number.MIN_SAFE_INTEGER))))))
+       (do
+         (is (= "3fffffffffffff" (-format "%x" -1)))
+         (is (= "20000000000001" (-format "%x" js/Number.MIN_SAFE_INTEGER)))
+         (is (= "30000000000000" (-format "%x" -0x10000000000000)))
+         (is (= "2fffffffffffff" (-format "%x" -0x10000000000001)))))))
 
 (deftest oct-test
   (testing "Conversion to octal"
@@ -50,4 +51,12 @@
     (is (= "04553207" (-format "%#08o" 1234567)))
     (is (= "  04553207" (-format "%#11o" 1234567)))
     (is (= "0004553207" (-format "%#011o" 1234567)))
-    (is (= "04553207  " (-format "%#-11o" 1234567)))))
+    (is (= "04553207  " (-format "%#-11o" 1234567)))
+    #?(:cljs
+       (do
+         (is (= "777777777777777777" (-format "%o" -1)))
+         (is (= "700000000000000000" (-format "%o" -0100000000000000000)))
+         (is (= "677777777777777777" (-format "%o" -0100000000000000001)))
+         (is (= "400000000000000001" (-format "%o" js/Number.MIN_SAFE_INTEGER)))
+         (is (= "500000000000000000" (-format "%o" -0300000000000000000)))
+         (is (= "400000000000000001" (-format "%o" -0377777777777777777)))))))
