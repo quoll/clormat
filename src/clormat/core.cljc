@@ -63,8 +63,8 @@
              (and (< size wdth)
                   (let [block (repeat (- wdth size) c)]
                     (if l
-                      (str (apply str block) s)
-                      (apply str s block))))))
+                      (apply str s block)
+                      (str (apply str block) s))))))
     s)))
 
 (defn err
@@ -83,8 +83,8 @@
   (let [h (oct a)]
     (if (flagset? \#)
       (if (flagset? \0)
-        (str "0" (set-width h width 2 left \0))
-        (set-width (str "0" h) width 2 left))
+        (str "0" (set-width h width 1 left \0))
+        (set-width (str "0" h) width 0 left))
       (let [padding (if (flagset? \0) \0 \space)]
         (set-width h width 0 left padding)))))
 
@@ -95,7 +95,7 @@
     (if (flagset? \#)
       (if (flagset? \0)
         (str "0x" (set-width h width 2 left \0))
-        (set-width (str "0x" h) width 2 left))
+        (set-width (str "0x" h) width 0 left))
       (let [padding (if (flagset? \0) \0 \space)]
         (set-width h width 0 left padding)))))
 
@@ -115,7 +115,7 @@
 (defn format-dec
   "Formats decimal integers according to provided flags and width"
   [a width left flagset?]
-  (let [[v sign] (if (neg? a) [a \-] [(- a) \+])
+  (let [[v sign] (if (neg? a) [(- a) \-] [a \+])
         ;; if the numberformatter is padding with zeros, then determine the width based
         ;; of extra characters that may be added, such as parens or leading +/-
         w (and width
@@ -126,7 +126,7 @@
         s (dformat v (flagset? \,) w)
         ;; add extra characters to indicate sign
         s (if (= sign \-)
-            (if (flagset? \-) (str \( s \)) (str \- s))
+            (if (flagset? \() (str \( s \)) (str \- s))
             (if (flagset? \+)
               (str \+ s)
               (if (flagset? \space)
