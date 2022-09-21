@@ -80,6 +80,9 @@ I figured they'd be a bit harder, and I wanted to get an initial release done.
 ### This license is incompatible with my other code. Can I change it?
 So long as you're not using it for anything specified in the license, I'm happy to let you use it under the EPL. Talk to me.
 
+### Why doesn't this work with my language?
+I'm monolingual, and I don't know how to work with numbers in non-European scripts. Some things will work (like grouping on numbers), but others won't (like prefixing with 0). I would love to work with someone who knows the rules for other writing systems.
+
 ### Why is the name so weird?
 It is a portmanteau for "Clojure(Script) Format". It sounded weird, but the more I said it the more amused I was at the name. It makes me think of a Floor Mat in a car. Yes, I know I'm a bit strange.
 
