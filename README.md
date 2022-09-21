@@ -75,7 +75,7 @@ I get frustrated at seeing functions in Clojure that aren't available in Clojure
 This is the size of integers in JavaScript. This is because they are represented using the Mantissa portion of an IEEE-754 64-bit floating point value.
 
 ### I could use this for floating point numbers. Why aren't they done yet?
-I figured they'd be a bit harder, and I wented to get an initial release done.
+I figured they'd be a bit harder, and I wanted to get an initial release done.
 
 ### This license is incompatible with my other code. Can I change it?
 So long as you're not using it for anything specified in the license, I'm happy to let you use it under the EPL. Talk to me.
