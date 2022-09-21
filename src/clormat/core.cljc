@@ -101,16 +101,12 @@
 
 (defn dformat
   "Uses the default locale to do number formatting"
-  [d group? width]
+  [d group?]
   #?(:clj (let [nf (NumberFormat/getInstance)]
             (.setGroupingUsed nf (boolean group?))
-            (when width (.getMinimumIntegerDigits nf width))
             (.format nf d))
-     :cljs (let [options (if group? #js{:useGrouping "true"} #js{})
-                 options (if width
-                           (js/Object.assign options #js{:minimumSignificantDigits width})
-                           options)]
-             (.format (js/Intl.NumberFormat) d options))))
+     :cljs (let [options #js{:useGrouping (boolean group?)}]
+             (.format (js/Intl.NumberFormat. js/undefined options) d))))
 
 (defn format-dec
   "Formats decimal integers according to provided flags and width"
@@ -122,8 +118,9 @@
                (flagset? \0)
                (if (= sign \-)
                  (if (flagset? \() (- width 2) (dec width))
-                 (if (or (flagset? \+) (flagset? \space)) (dec width))))
-        s (dformat v (flagset? \,) w)
+                 (if (or (flagset? \+) (flagset? \space)) (dec width) width)))
+        s (dformat v (flagset? \,))
+        s (if w (set-width s w 0 false \0) s)
         ;; add extra characters to indicate sign
         s (if (= sign \-)
             (if (flagset? \() (str \( s \)) (str \- s))
@@ -147,8 +144,7 @@
                                     (set-width (str a) width 0 left))
                              :cljs (set-width (str a) width 0 left)))
         as-char (fn [a] (if (char? a)
-                          (let [s (set-width a width 0 left)]
-                            (if (= "C" conversion) (str/upper-case s)))
+                          (set-width a width 0 left)
                           (err (str a "is not a character") lexed)))]
     (case conversion
       "b" (set-width (str (boolean arg)) width 0 left)

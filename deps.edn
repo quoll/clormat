@@ -13,5 +13,5 @@
   :test-cljs {:extra-paths ["test"]
               :main-opts ["--main"    "cljs.main"
                           "--repl-env" "node"
-                          "-i" "test/clormat/clormat_test.cljc"
+                          "-i" "test/clormat/core_test.cljc"
                           ]}}}  ;; clj -M:test-cljs
