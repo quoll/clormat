@@ -8,14 +8,12 @@ The specification is large, so this is an ongoing project.
 ## Usage
 
 The latest version can be included in `project.clj` as:
+
 [![Clojars Project](http://clojars.org/org.clojars.quoll/clormat/latest-version.svg)](http://clojars.org/org.clojars.quoll/clormat)
 
 Or in `deps.edn` with:
 ```clojure
-{ :deps {
-    org.clojars.quoll/clormat {:mvn/version "0.0.1"}
-  }
-}
+{ :deps { org.clojars.quoll/clormat {:mvn/version "0.0.1"} }}
 ```
 
 To use the library, load core and refer to the `format` function. In Clojure this is renamed to `-format` so as not to interfere with `clojure.core/format`:
