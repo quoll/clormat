@@ -48,6 +48,8 @@ Currently supports:
 - %t %T date/time
 - %n platform specific line separator
 
+Refer to the [Java Formatter class for a description of the specification](https://docs.oracle.com/en/java/javase/19/docs/api/java.base/java/util/Formatter.html) for this function.
+
 ### For Developers
 
 To run the project's tests Clojure:
