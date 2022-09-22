@@ -136,15 +136,16 @@
 
 (defn format-float
   [arg width precision left flagset?]
-  (let [precision (or precision DEFAULT-PRECISION)
-        [d w] (if (and (neg? arg) (flagset? \()) [(- arg) (- width 2)] [arg width])
-        options (cond-> {:minimumFractionDigits precision
-                         :maximumFractionDigits precision
-                         :roundingMode "halfExpand"}
-                  (flagset? \space \+) (assoc :signDisplay "always")
-                  (flagset? \,) (assoc :useGrouping "always"))
-        ]
-   )
+  #?(:cljs 
+     (let [precision (or precision DEFAULT-PRECISION)
+           [d w] (if (and (neg? arg) (flagset? \()) [(- arg) (- width 2)] [arg width])
+           options (cond-> {:minimumFractionDigits precision
+                            :maximumFractionDigits precision
+                            :roundingMode "halfExpand"}
+                     (flagset? \space \+) (assoc :signDisplay "always")
+                     (flagset? \,) (assoc :useGrouping "always"))
+           s (.format (js/Intl.NumberFormat. js/undefined (clj->js options)) d)]
+       ))
   )
 
 #?(:cljs (def os (js* "(() => {try { return require('os'); } catch (err) { return null; }})()")))
