@@ -131,6 +131,28 @@
                 s)))]
     (set-width s width 0 left)))
 
+;; Don't ask me why it's 6. Ask Sun Microsystems^W^W Oracle
+(def DEFAULT-PRECISION 6)
+
+(defn format-float
+  [arg width precision left flagset?]
+  (let [precision (or precision DEFAULT-PRECISION)
+        [d w] (if (and (neg? arg) (flagset? \()) [(- arg) (- width 2)] [arg width])
+        options (cond-> {:minimumFractionDigits precision
+                         :maximumFractionDigits precision
+                         :roundingMode "halfExpand"}
+                  (flagset? \space \+) (assoc :signDisplay "always")
+                  (flagset? \,) (assoc :useGrouping "always"))
+        ]
+   )
+  )
+
+#?(:cljs (def os (js* "(() => {try { return require('os'); } catch (err) { return null; }})()")))
+
+(def line-separator
+  #?(:clj (System/getProperty "line.separator")
+     :cljs (if os os/EOL \newline)))
+
 (defn convert
   "Converts a lexed specifier and argument into the required string"
   [[_ _ _ flags width precision conversion rem :as lexed] arg]
@@ -165,13 +187,13 @@
       "X" (str/upper-case (format-hex arg width left flagset?))
       "e" arg
       "E" arg
-      "f" arg
+      "f" (format-float arg width precision left flagset?)
       "g" arg
       "G" arg
       "a" arg
       "A" arg
       ("t" "T") arg ;; picks up the date/time description from the remaining
-      "n" arg
+      "n" line-separator
       "%" "%"
       (err (str "Unknown conversion: " conversion) lexed))))
 
